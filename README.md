@@ -41,15 +41,41 @@
 - Now you can connect your machine with gitlab with your ssh key.
 
 ## Configuration For Creating Pipelines to build and deploy your jar application
-- login to gitlab account go to desired repository and go to pipeline and start by adding a new job in your desired branch and this will create .gitlab-ci.yml file your branch. take a pull of your branch if you want to work locally on this file.
-- 
+- login to gitlab account go to desired repository and go to pipeline and start by adding a new job in your desired branch and this will create .gitlab-ci.yml file your branch. Take a pull of your branch if you want to work locally on this file.
 
-## gitlab-ci.yml file architecture
-- **stages**:          # List of stages for jobs, and their order of execution
-		- test
-		- build
-		- deploy
-- 
+	**gitlab-ci.yml file architecture**
+			  
+		stages:          # List of stages for jobs, and their order of execution  
+	  - build  
+	  - deploy  
+  
+		build-job:       # This job runs in the build stage, which runs first.  
+		  stage: build  
+		  script:  
+		    - echo "Compiling the code..."  
+		    - echo "Compile complete."  
+		    - echo $CI_COMMIT_REF_NAME  
+		    - git checkout -B "$CI_COMMIT_REF_NAME" # this will checkout you to the 	branch where you want to run the pipelines  
+			- mvn clean  
+		    - mvn package  
+		  artifacts:  
+		    expire_in: 2 week  
+		    when: on_success  
+		    paths:  
+	      - target/*.jar  # path specified where you want the jar file from  
+		  rules:  
+		    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "staging"' # specify your branch in my case its staging  
+  
+		deploy-job:      # This job runs in the deploy stage.  
+		  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.  
+		  before_script:    
+		    - cd target  
+		  variables:  
+		    FILE: "*.jar"  
+		  script:  
+			     echo "Deploy Code"
+		  rules:  
+		    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "staging"'
 
 # Symbolic Link
 In [computing](https://en.wikipedia.org/wiki/Computing "Computing"), a **symbolic link** (also **symlink** or **soft link**) is a file whose purpose is to point to a file or directory (called the "target") by specifying a [path](https://en.wikipedia.org/wiki/Path_(computing) "Path (computing)") thereto.
